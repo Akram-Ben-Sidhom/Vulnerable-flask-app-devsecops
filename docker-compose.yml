@@ -9,7 +9,7 @@ services:
     volumes:
       - ./test.db:/app/test.db   # optional: persist DB to host for inspection
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5005/"]
       interval: 10s
       timeout: 3s
       retries: 3

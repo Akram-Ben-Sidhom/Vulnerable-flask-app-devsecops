@@ -28,7 +28,7 @@ EXPOSE 5000
 
 # Healthcheck (simple)
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -fsS http://localhost:5000/ || exit 1
+  CMD curl -fsS http://localhost:5005/ || exit 1
 
 
 CMD ["python", "app.py"]
