@@ -17,6 +17,13 @@ Run locally (in an isolated environment):
 4. python app.py
 5. Open http://localhost:5000/login
 
+Or Using docker:
+1. docker build -t vuln-flask-app:latest .
+2. docker run --rm -p 5000:5000 --name vuln-flask-app vuln-flask-app:latest
+
+
+
+
 
 Test hints:
 - SQLi: try `username: ' OR '1'='1` and any password
