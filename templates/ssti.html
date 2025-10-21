@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+<title>SSTI test</title>
+</head>
+<body>
+<h2>Welcome</h2>
+<p>Rendered name: {{ name }}</p>
+<p>{{ note }}</p>
+
+
+<!-- Intentionally render the name again unsafely to allow SSTI payloads to execute -->
+<div>
+<h3>Unsafe render (SSTI):</h3>
+<!-- Using the |safe filter may make detection easier — we intentionally leave raw rendering -->
+{{ name }}
+</div>
+
+
+<p><a href="/">Back</a></p>
+</body>
+</html>

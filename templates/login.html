@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head>
+<title>Login (Vulnerable)</title>
+</head>
+<body>
+<h2>Login</h2>
+{% if msg %}<p><strong>{{ msg }}</strong></p>{% endif %}
+<form method="post">
+<label>Username: <input type="text" name="username" /></label><br />
+<label>Password: <input type="password" name="password" /></label><br />
+<button type="submit">Login</button>
+</form>
+<p>Try SQLi: <code>' OR '1'='1</code> in username or password</p>
+</body>
+</html>
