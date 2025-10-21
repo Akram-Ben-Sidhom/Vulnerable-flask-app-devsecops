@@ -1,6 +1,6 @@
-Flask==0.12.4        # intentionally old Flask version (known vulnerabilities)
-Jinja2==2.9.6        # older Jinja2
-MarkupSafe==2.0.1    # pin to a version compatible with old Jinja2 (fixes ImportError)
-requests==2.7.0      # intentionally old requests to trigger SCA
+Flask==0.12.4
+Jinja2==2.9.6
+MarkupSafe==1.1.1      # compatible with Jinja2 2.9.6
+requests==2.7.0
 pytest==6.2.5
 prometheus-client==0.9.0
