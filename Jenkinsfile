@@ -224,7 +224,7 @@ pipeline {
          steps {
            script {
             def imageTag = "${IMAGE_NAME}:${BUILD_NUMBER}"
-            def nexusImageTag = "NEXUS/${NEXUS_REPOSITORY}/${imageTag}"
+            def nexusImageTag = "${NEXUS_URL}/${NEXUS_REPOSITORY}/${imageTag}"
 
             withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIAL_ID}", 
                                              usernameVariable: 'NEXUS_USER', 
