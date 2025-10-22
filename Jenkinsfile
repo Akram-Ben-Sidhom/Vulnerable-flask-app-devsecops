@@ -56,18 +56,19 @@ pipeline {
 
                 stage('SonarQube Analysis') {
                     steps {
-                            sh '''
-                                echo "🔎 Running SonarQube scan..."
-                                 sh 'mvn sonar:sonar \
-                                    -Dsonar.projectkey=desvsecops \
-                                    -Dsonar.host.url=$SONAR_HOST_URL \
-                                    -Dsonar.token=$SONAR_AUTH_TOKEN' \
-                                    -Dsonar.projectName=${IMAGE_NAME} \
-                                    -Dsonar.projectVersion=1.0 \
-                                    -Dsonar.sources=. \
-                                    -Dsonar.language=py \
-                                    -Dsonar.sourceEncoding=UTF-8
-                            '''
+                           echo "🔎 Running SonarQube scan for Python project..."
+                           withSonarQubeEnv('sonar') {
+                           sh '''
+                           sonar-scanner \
+                               -Dsonar.projectKey=devsecops \
+                               -Dsonar.projectName=vuln-flask-app \
+                               -Dsonar.projectVersion=1.0 \
+                               -Dsonar.sources=. \
+                               -Dsonar.language=py \
+                               -Dsonar.sourceEncoding=UTF-8 \
+                               -Dsonar.host.url=$SONAR_HOST_URL \
+                               -Dsonar.login=$SONAR_AUTH_TOKEN
+                           '''
                     }
                 }
 
