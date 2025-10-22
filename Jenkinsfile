@@ -128,27 +128,22 @@ pipeline {
                }
         }
     
-        stage('Dynamic Analysis - OWASP ZAP & Wapiti') {
-          parallel{
-             stage('OWASP ZAP'){
+          
+        stage('DAST OWASP ZAP'){
                steps {
                 script {
                     echo "Starting vulnerable container for DAST..."
                     sh "docker run -d -p 5005:5005 --name test-${BUILD_NUMBER} ${IMAGE_NAME}:${BUILD_NUMBER}"
-                    sleep(10)
+                    sleep(20)
 
                     echo '🔍 Running OWASP ZAP baseline scan...'
 
                     // Run ZAP but ignore exit code
                     def exitCode = sh(script: '''
-                        docker run -d --name zap-container -t zaproxy/zap-stable \
+                        docker run --rm --user root --network host -v $(pwd):/zap/wrk:rw \
                         -t zaproxy/zap-stable zap-full-scan.py \
                         -t http://localhost:5005/login \
                         -r zap_full_report.html -J zap_full_report.json
-                        docker cp zap-container:/zap/wrk/zap_full_report.json .
-                        docker cp zap-container:/zap/wrk/zap_full_report.html .
-                        docker stop zap-container
-                        docker rm zap-container
                     ''', returnStatus: true)
 
                     echo "ZAP scan finished with exit code: ${exitCode}"
@@ -177,8 +172,10 @@ pipeline {
                     }
                 }
                }
-             }
-            stage('Wapiti'){
+        }    
+
+
+        stage('DAST Wapiti'){
                 steps{
                   script{
                 
@@ -196,9 +193,8 @@ pipeline {
 
                   }
                 }
-              }
-          }
-        }
+        } 
+            
 
     }    
      
