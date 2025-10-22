@@ -7,16 +7,14 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_VERSION = 'nexus3'
-        NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "192.168.50.4:8081"
+        NEXUS_URL = "http://192.168.50.4:8081"
         NEXUS_REPOSITORY = "image-repo"
-        NEXUS_REPO_ID = "image-repo"
         NEXUS_CREDENTIAL_ID = "nexus"
         ARTVERSION = "${env.BUILD_ID}"
         IMAGE_NAME = "vuln-flask-app"
         SONAR_HOST_URL='http://192.168.50.4:9000'
         SONAR_AUTH_TOKEN=credentials('sonarqube')
+        SLACK_CHANNEL = '#devsecops'
     }
 
     stages {
@@ -31,6 +29,27 @@ pipeline {
             steps {
                 git branch: 'main', url: 'https://github.com/Akram-Ben-Sidhom/Vulnerable-flask-app-devsecops.git'
             }
+        }
+        stage('Images Cleanup') {
+         steps {
+           script {
+           def prevBuild = (BUILD_NUMBER.toInteger() - 1)
+            if (prevBuild > 0) {
+                def prevContainer = "test-${prevBuild}"
+                def prevImage = "${IMAGE_NAME}:${prevBuild}"
+
+                // Remove previous container if exists
+                sh "docker remove ${prevContainer} || true"
+
+                // Remove previous image if exists
+                sh "docker image remove ${prevImage} || true"
+
+                echo "✅ Removed previous container (${prevContainer}) and image (${prevImage})"
+              } else {
+                echo "ℹ️ No previous build to clean up"
+             }
+           }
+         }
         }
 
         stage('Unit Tests') {
@@ -200,14 +219,69 @@ pipeline {
                   }
                 }
         } 
-            
+
+        stage('Publish Secure Docker Image Into Nexus') {
+         steps {
+           script {
+            def imageTag = "${IMAGE_NAME}:${BUILD_NUMBER}"
+            def nexusImageTag = "NEXUS/${NEXUS_REPOSITORY}/${imageTag}"
+
+            withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIAL_ID}", 
+                                             usernameVariable: 'NEXUS_USER', 
+                                             passwordVariable: 'NEXUS_PASSWORD')]) {
+                sh "echo $NEXUS_PASSWORD | docker login ${NEXUS_URL} -u $NEXUS_USER --password-stdin"
+
+                echo " Tagging image for Nexus..."
+                sh "docker tag ${imageTag} ${nexusImageTag}"
+
+                echo " Pushing image to Nexus..."
+                sh "docker push ${nexusImageTag}"
+
+                echo "✅ Image pushed: ${nexusImageTag}"
+            }
+            }
+         }
+        }
+        
 
     }    
      
     post {
         always {
+            script{
             echo "📦 Archiving scan reports..."
             archiveArtifacts artifacts: '**/*.xml,**/*.json,**/*.txt,**/*.html', allowEmptyArchive: true
+            
+                def buildStatus = currentBuild.currentResult
+                def buildUser = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')[0]?.userId ?: 'GitHub User'
+                def buildUrl = "${env.BUILD_URL}"
+                echo "📦 Slack notif "
+
+                slackSend(
+                    channel: "${SLACK_CHANNEL}",
+                    color: COLOR_MAP[buildStatus],
+                    message: """*${buildStatus}:* Job *${env.JOB_NAME}* Build #${env.BUILD_NUMBER}
+                    👤 *Started by:* ${buildUser}
+                    🔗 *Build URL:* <${buildUrl}|Click Here for Details>"""
+                )
+                echo "📦 Check your mail notif "
+               // emailext (
+                //subject: "Pipeline ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                //body: """
+                   // <p>Youtube Link :- https://www.youtube.com/@devopsHarishNShetty </p>                                     
+                   // <p>Maven App-tier DevSecops CICD pipeline status.</p>
+                   // <p>Project: ${env.JOB_NAME}</p>
+                   // <p>Build Number: ${env.BUILD_NUMBER}</p>
+                   // <p>Build Status: ${buildStatus}</p>
+                   // <p>Started by: ${buildUser}</p>
+                   // <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                //""",
+               // to: 'unknownchapo0@gmail.com',
+                //from: 'unknownchapo0@gmail.com',
+                //mimeType: 'text/html',
+                //attachmentsPattern: 'trivyfs.txt,trivy-image.json,trivy-image.txt,dependency-check-report.xml,zap_report.html,zap_report.json'
+                //    )
+            }
         }
     }
 
