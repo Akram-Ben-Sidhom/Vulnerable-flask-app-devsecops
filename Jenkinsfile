@@ -35,15 +35,15 @@ pipeline {
 
        stage('Unit Tests') {
     steps {
-        echo "⚙️ Running Python Unit Test..."
-        sh '''
-           docker run --rm \
-          -v $(pwd):/app \
-          -w /app \
-          python:3.8 \
-          bash -c "pip install --quiet -r requirements.txt && pytest tests/ --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml"
-           '''
-    }
+          sh '''
+          echo "⚙️ Running Python Unit Test..."
+        docker run --rm \
+        -v $(pwd):/app \
+        -w /app \
+        python:3.8 \
+        bash -c "pip install --quiet -r requirements.txt && PYTHONPATH=/app pytest tests/ --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml"
+        '''
+         }
     post {
         always {
             archiveArtifacts artifacts: 'pytest-report.xml', allowEmptyArchive: true
