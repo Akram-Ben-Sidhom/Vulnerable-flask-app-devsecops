@@ -229,7 +229,7 @@ pipeline {
             withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIAL_ID}", 
                                              usernameVariable: 'NEXUS_USER', 
                                              passwordVariable: 'NEXUS_PASSWORD')]) {
-                sh "echo $NEXUS_PASSWORD | docker login ${NEXUS_URL} -u $NEXUS_USER --password-stdin"
+                sh '''echo $NEXUS_PASSWORD | docker login ${NEXUS_URL} -u $NEXUS_USER --password-stdin'''
 
                 echo " Tagging image for Nexus..."
                 sh "docker tag ${imageTag} ${nexusImageTag}"
