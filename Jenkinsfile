@@ -33,29 +33,22 @@ pipeline {
             }
         }
 
-       stage('Unit Tests') {
-    steps {
-          sh '''
-          echo "⚙️ Running Python Unit Test..."
-        docker run --rm \
-        -v $(pwd):/app \
-        -w /app \
-        python:3.8 \
-        bash -c "pip install --quiet -r requirements.txt && PYTHONPATH=/app pytest tests/ --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml"
-        '''
-         }
-    post {
-        always {
-            archiveArtifacts artifacts: 'pytest-report.xml', allowEmptyArchive: true
+        stage('Unit Tests') {
+          steps {
+              sh '''
+              echo "⚙️ Running Python Unit Test..."
+              docker run --rm \
+              -v $(pwd):/app \
+              -w /app \
+              python:3.8 \
+              bash -c "pip install --quiet -r requirements.txt && PYTHONPATH=/app pytest tests/ --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml"
+              '''
+          }
+           post {
+             success {echo '✅ Unit tests passed successfully.'}
+             failure {echo '❌ Unit tests failed.'}
+           }
         }
-        success {
-            echo '✅ Unit tests passed successfully.'
-        }
-        failure {
-            echo '❌ Unit tests failed.'
-        }
-    }
-}
 
         stage('Static Analysis - SonarQube & Bandit') {
             parallel {
@@ -92,6 +85,16 @@ pipeline {
                 }
             }
         }
+        stage('Secrets Scan - GitLeaks') {
+            steps {
+                sh '''
+                    echo "Running GitLeaks..."
+                    docker run --rm -v $(pwd):/repo zricethezav/gitleaks:latest \
+                    detect --source /repo --report-format json \
+                    --report-path /repo/gitleaks-report.json || true
+                '''
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -102,26 +105,74 @@ pipeline {
             }
         }
 
-        stage("Trivy Scan Image") {
-            steps {
-                script {
-                    def imageTag = "${IMAGE_NAME}:${BUILD_NUMBER}"
+        stage("Trivy Scan") {
+         steps {
+            script {
+                def imageTag = "${IMAGE_NAME}:${BUILD_NUMBER}"
                     echo "🔍 Running Trivy scan on ${imageTag}"
-                    sh """
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy image -f json -o trivy-image.json ${imageTag} || true
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy image -f table -o trivy-image.txt ${imageTag} || true
-                    """
-                }
-            }
-        }
-    }
 
+                    echo "⏳ Updating Trivy DB..."
+                    sh 'trivy image --download-db-only'
+
+                    echo "🔎 Scanning built image..."
+                    sh '''
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --format json -o trivy-report.json ${imageTag}
+                    '''
+
+                    echo "🖥️ Scanning filesystem (optional)..."
+                    sh '''
+                     trivy fs --exit-code 1 --severity HIGH,CRITICAL --format json -o trivy-fs-report.json .
+                    ''' 
+                    }
+               }
+        }
+    
+        stage('Dynamic Analysis - OWASP ZAP & Wapiti') {
+          parallel{
+             stage('OWASP ZAP'){
+               steps {
+                script {
+                    echo "Starting vulnerable container for DAST..."
+                    sh "docker run -d -p 5005:5005 --name test-${BUILD_NUMBER} ${IMAGE_NAME}:${BUILD_NUMBER}"
+                    sleep(10)
+
+                    echo "Running OWASP ZAP scan..."
+                    sh '''
+                        docker run --rm -v $(pwd):/zap/wrk/:rw \
+                        owasp/zap2docker-stable zap-baseline.py \
+                        -t http://host.docker.internal:5005 \
+                        -r zap_report.html || true
+                    '''
+                }
+               }
+             }
+             stage('Wapiti'){
+                steps{
+                  script{
+                
+                    echo "Running Wapiti scan..."
+                    sh '''
+                        docker run --rm -v $(pwd):/tmp/ \
+                        projectdiscovery/wapiti \
+                        -u http://host.docker.internal:5000 \
+                        -f html -o wapiti_report.html || true
+                    '''
+
+                    sh "docker stop test-${BUILD_NUMBER}"
+                  }
+                }
+              }
+          }
+        }
+
+    }    
+     
     post {
         always {
             echo "📦 Archiving scan reports..."
-            archiveArtifacts artifacts: '**/*.json, **/*.txt', allowEmptyArchive: true
+            archiveArtifacts artifacts: '**/*.xml,**/*.json,**/*.txt,**/*.html', allowEmptyArchive: true
         }
     }
+
 }
+
