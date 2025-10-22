@@ -15,7 +15,7 @@ Run locally (in an isolated environment):
 2. source venv/bin/activate
 3. pip install -r requirements.txt
 4. python app.py
-5. Open http://localhost:5000/login
+5. Open http://localhost:5005/login
 
 Or Using docker:
 1. docker build -t vuln-flask-app:latest .
@@ -32,3 +32,12 @@ Test hints:
 
 
 **Do not expose this app to the public internet.**
+# Jenkins file for full devsecops pipeline 
+1. github scm checkout
+2. Unit test (pytest)
+3. static code analysis(bandit/sonarqube)
+4. docker image building
+5. container scan (trivy fs / trivy image)
+6. DAST scan (owaspzap  / wapiti )
+7. Secure image deployment(nexus)
+8. Notification (slack/gmail)
