@@ -33,23 +33,29 @@ pipeline {
             }
         }
 
-        stage('Unit Tests') {
-            steps {
-                script {
-                    echo "⚙️ Running Unit Tests (placeholder)..."
-                    // If you have pytest, for example:
-                    // sh 'pytest --maxfail=1 --disable-warnings -q'
-                }
-            }
-            post {
-                success {
-                    echo '✅ Unit tests passed successfully.'
-                }
-                failure {
-                    echo '❌ Unit tests failed.'
-                }
-            }
+       stage('Unit Tests') {
+    steps {
+        echo "⚙️ Running Python Unit Test..."
+        sh '''
+            docker run --rm \
+                -v $(pwd):/app \
+                -w /app \
+                python:3.8 \
+                bash -c "pip install --quiet -r requirements.txt && pytest --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml"
+        '''
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: 'pytest-report.xml', allowEmptyArchive: true
         }
+        success {
+            echo '✅ Unit tests passed successfully.'
+        }
+        failure {
+            echo '❌ Unit tests failed.'
+        }
+    }
+}
 
         stage('Static Analysis - SonarQube & Bandit') {
             parallel {
@@ -57,20 +63,20 @@ pipeline {
                 stage('SonarQube Analysis') {
                     steps {
                            echo "🔎 Running SonarQube scan for Python project..."
-                           withSonarQubeEnv('sonar') {
                            sh '''
-                           sonar-scanner \
-                               -Dsonar.projectKey=devsecops \
-                               -Dsonar.projectName=vuln-flask-app \
-                               -Dsonar.projectVersion=1.0 \
-                               -Dsonar.sources=. \
-                               -Dsonar.language=py \
-                               -Dsonar.sourceEncoding=UTF-8 \
-                               -Dsonar.host.url=$SONAR_HOST_URL \
-                               -Dsonar.login=$SONAR_AUTH_TOKEN
+                             docker run --rm \
+                            -v $(pwd):/usr/src \
+                            -e SONAR_HOST_URL=$SONAR_HOST_URL \
+                            -e SONAR_LOGIN=$SONAR_AUTH_TOKEN \
+                            sonarsource/sonar-scanner-cli:latest \
+                            -Dsonar.projectKey=devsecops \
+                            -Dsonar.projectName=$IMAGE_NAME \
+                            -Dsonar.projectVersion=1.0 \
+                            -Dsonar.sources=/usr/src \
+                            -Dsonar.language=py \
+                            -Dsonar.sourceEncoding=UTF-8
                            '''
                     }
-                }
                 }
 
                 stage('Bandit Scan') {
