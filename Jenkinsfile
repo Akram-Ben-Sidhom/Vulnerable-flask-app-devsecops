@@ -15,7 +15,7 @@ pipeline {
         NEXUS_CREDENTIAL_ID = "nexus"
         ARTVERSION = "${env.BUILD_ID}"
         IMAGE_NAME = "vuln-flask-app"
-        SONAR_HOST_URL='http://192.168.50.4:9000/'
+        SONAR_HOST_URL='http://192.168.50.4:9000'
         SONAR_AUTH_TOKEN=credentials('sonarqube')
     }
 
@@ -67,7 +67,7 @@ pipeline {
                              docker run --rm \
                             -v $(pwd):/usr/src \
                             -e SONAR_HOST_URL=$SONAR_HOST_URL \
-                            -e SONAR_LOGIN=$SONAR_AUTH_TOKEN \
+                            -e SONAR_TOKEN=$SONAR_AUTH_TOKEN \
                             sonarsource/sonar-scanner-cli:latest \
                             -Dsonar.projectKey=devsecops \
                             -Dsonar.projectName=$IMAGE_NAME \
