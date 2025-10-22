@@ -14,7 +14,7 @@ pipeline {
         IMAGE_NAME = "vuln-flask-app"
         SONAR_HOST_URL='http://192.168.50.4:9000'
         SONAR_AUTH_TOKEN=credentials('sonarqube')
-        SLACK_CHANNEL = '#devsecops'
+        SLACK_CHANNEL = '#pipeline-notif'
     }
 
     stages {
