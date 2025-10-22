@@ -182,7 +182,7 @@ pipeline {
                         -f html -o wapiti_report.html || true
                     '''
 
-                    sh "docker stop test-${BUILD_NUMBER}"
+                    echo "Wapiti Scan Finished"
                   }
                 }
               }
