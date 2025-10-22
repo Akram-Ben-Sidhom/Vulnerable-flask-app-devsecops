@@ -178,17 +178,22 @@ pipeline {
         stage('DAST Wapiti'){
                 steps{
                   script{
-                
+                    if (!fileExists('./reports')) {
+                        sh 'mkdir -p ./reports'
+                    }
                     echo "Running Wapiti scan..."
+
                     sh '''
-                        docker run --rm --user root -v $(pwd)/wapiti:/.wapiti/ \
+                        docker run --name wapiti-test  --user root 
                         wildwildangel/wapiti \
                         -u http://localhost:5005/login \
-                        -f html -o wapiti_report.html || true
+                        -f html -o /root/wapiti_report.html || true
                     '''
-
+                    echo "getting the wapiti report now"
+                    sh 'docker cp wapiti-test:/root/wapiti_report.html ./reports/wapiti_report.html'
                     echo "Wapiti Scan Finished"
                     echo "Closing Instance Now"
+                    sh 'docker rm -f wapiti-test'
                     sh "docker stop test-${BUILD_NUMBER}"
 
                   }
