@@ -142,8 +142,8 @@ pipeline {
                     // Run ZAP but ignore exit code
                     def exitCode = sh(script: '''
                         docker run -d --name zap-container -t zaproxy/zap-stable \
-                        -t zaproxy/zap-stable zap-full-scan.py \ 
-                        -t http://localhost:5005/login \ 
+                        -t zaproxy/zap-stable zap-full-scan.py \
+                        -t http://localhost:5005/login \
                         -r zap_full_report.html -J zap_full_report.json
                         docker cp zap-container:/zap/wrk/zap_full_report.json .
                         docker cp zap-container:/zap/wrk/zap_full_report.html .
