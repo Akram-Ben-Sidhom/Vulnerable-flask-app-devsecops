@@ -251,7 +251,7 @@ pipeline {
             script{
             echo "📦 Archiving scan reports..."
             archiveArtifacts artifacts: '**/*.xml,**/*.json,**/*.txt,**/*.html', allowEmptyArchive: true
-            
+                //def attachments = findFiles(glob: '**/*.{json,xml,txt,html}').collect { it.path }.join(',')
                 def buildStatus = currentBuild.currentResult
                 def buildUser = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')[0]?.userId ?: 'GitHub User'
                 def buildUrl = "${env.BUILD_URL}"
@@ -265,22 +265,27 @@ pipeline {
                     🔗 *Build URL:* <${buildUrl}|Click Here for Details>"""
                 )
                 echo "📦 Check your mail notif "
-               // emailext (
-                //subject: "Pipeline ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                //body: """
-                   // <p>Youtube Link :- https://www.youtube.com/@devopsHarishNShetty </p>                                     
-                   // <p>Maven App-tier DevSecops CICD pipeline status.</p>
-                   // <p>Project: ${env.JOB_NAME}</p>
-                   // <p>Build Number: ${env.BUILD_NUMBER}</p>
-                   // <p>Build Status: ${buildStatus}</p>
-                   // <p>Started by: ${buildUser}</p>
-                   // <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                emailext (
+                subject: "Pipeline ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <html>  
+                    <body>                                
+                    <h3>Vulnerable Flask App DevSecops CICD pipeline status.</h3>
+                    <p>Project: ${env.JOB_NAME}</p>
+                    <p>Build Number: ${env.BUILD_NUMBER}</p>
+                    <p>Build Status: ${buildStatus}</p>
+                    <p>Started by: ${buildUser}</p>
+                    <p>Nexus URL: <a href="http://${NEXUS_URL}/${NEXUS_REPOSITORY}">nexus link here</a></p>
+                    <hr>
+                    <p>This email includes all reports and generated artifacts.</p>
+                    </body>
+                    </html>
                 //""",
-               // to: 'unknownchapo0@gmail.com',
-                //from: 'unknownchapo0@gmail.com',
-                //mimeType: 'text/html',
-                //attachmentsPattern: 'trivyfs.txt,trivy-image.json,trivy-image.txt,dependency-check-report.xml,zap_report.html,zap_report.json'
-                //    )
+                to: 'unknownchapo0@gmail.com',
+                from: 'unknownchapo0@gmail.com',
+                mimeType: 'text/html',
+                attachmentsPattern: '**/*.xml,**/*.json,**/*.txt,**/*.html'
+                    )
             }
         }
     }
