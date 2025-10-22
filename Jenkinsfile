@@ -133,21 +133,25 @@ pipeline {
              stage('OWASP ZAP'){
                steps {
                 script {
+                    echo "Starting vulnerable container for DAST..."
+                    sh "docker run -d -p 5005:5005 --name test-${BUILD_NUMBER} ${IMAGE_NAME}:${BUILD_NUMBER}"
+                    sleep(10)
+
                     echo '🔍 Running OWASP ZAP baseline scan...'
 
                     // Run ZAP but ignore exit code
                     def exitCode = sh(script: '''
                         docker run --rm --user root --network host -v $(pwd):/zap/wrk:rw \
-                        -t zaproxy/zap-stable zap-baseline.py \
-                        -t http://localhost:5005 \
-                        -r zap_report.html -J zap_report.json
+                        -t zaproxy/zap-stable zap-full-scan.py \
+                        -t http://localhost:5005/login \
+                        -r zap_full_report.html -J zap_full_report.json
                     ''', returnStatus: true)
 
                     echo "ZAP scan finished with exit code: ${exitCode}"
 
                     // Read the JSON report if it exists
                     if (fileExists('zap_report.json')) {
-                        def zapJson = readJSON file: 'zap_report.json'
+                        def zapJson = readJSON file: 'zap_full_report.json'
 
                         def highCount = zapJson.site.collect { site ->
                             site.alerts.findAll { it.risk == 'High' }.size()
@@ -178,11 +182,14 @@ pipeline {
                     sh '''
                         docker run --rm -v $(pwd):/tmp/ \
                         projectdiscovery/wapiti \
-                        -u http://host.docker.internal:5005 \
+                        -u http://localhost:5005/login \
                         -f html -o wapiti_report.html || true
                     '''
 
                     echo "Wapiti Scan Finished"
+                    echo "Closing Instance Now"
+                    sh "docker stop test-${BUILD_NUMBER}"
+
                   }
                 }
               }
