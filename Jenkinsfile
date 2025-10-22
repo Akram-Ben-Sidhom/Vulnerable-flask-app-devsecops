@@ -37,12 +37,12 @@ pipeline {
     steps {
         echo "⚙️ Running Python Unit Test..."
         sh '''
-            docker run --rm \
-                -v $(pwd):/app \
-                -w /app \
-                python:3.8 \
-                bash -c "pip install --quiet -r requirements.txt && pytest --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml"
-        '''
+           docker run --rm \
+          -v $(pwd):/app \
+          -w /app \
+          python:3.8 \
+          bash -c "pip install --quiet -r requirements.txt && pytest tests/ --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml"
+           '''
     }
     post {
         always {
