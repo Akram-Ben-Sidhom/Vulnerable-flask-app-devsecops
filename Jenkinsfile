@@ -150,7 +150,7 @@ pipeline {
                     echo "ZAP scan finished with exit code: ${exitCode}"
 
                     // Read the JSON report if it exists
-                    if (fileExists('zap_report.json')) {
+                    if (fileExists('zap_full_report.json')) {
                         def zapJson = readJSON file: 'zap_full_report.json'
 
                         def highCount = zapJson.site.collect { site ->
