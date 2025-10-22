@@ -115,9 +115,9 @@ pipeline {
                     sh 'trivy image --download-db-only'
 
                     echo "🔎 Scanning built image..."
-                    sh '''
+                    sh """
                     trivy image --exit-code 1 --severity HIGH,CRITICAL --format json -o trivy-report.json ${imageTag}
-                    '''
+                    """
 
                     echo "🖥️ Scanning filesystem (optional)..."
                     sh '''
