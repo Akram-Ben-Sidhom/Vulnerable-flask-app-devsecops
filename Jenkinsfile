@@ -184,7 +184,8 @@ pipeline {
                     echo "Running Wapiti scan..."
 
                     sh '''
-                        docker run --name wapiti-test  --user root 
+                        docker run --name wapiti-test \
+                        --user root \
                         wildwildangel/wapiti \
                         -u http://localhost:5005/login \
                         -f html -o /root/wapiti_report.html || true
