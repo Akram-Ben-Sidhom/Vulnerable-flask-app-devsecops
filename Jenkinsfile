@@ -90,7 +90,7 @@ pipeline {
                 sh '''
                     echo "Running GitLeaks..."
                     docker run --rm -v $(pwd):/repo zricethezav/gitleaks:latest \
-                    detect --source /repo --report-format json \
+                    detect --source /.git --report-format json \
                     --report-path /repo/gitleaks-report.json || true
                 '''
             }
@@ -181,8 +181,8 @@ pipeline {
                 
                     echo "Running Wapiti scan..."
                     sh '''
-                        docker run --rm -v $(pwd):/tmp/ \
-                        projectdiscovery/wapiti \
+                        docker run --rm -v $(pwd)/wapiti:/.wapiti/ \
+                        wildwildangel/wapiti \
                         -u http://localhost:5005/login \
                         -f html -o wapiti_report.html || true
                     '''
