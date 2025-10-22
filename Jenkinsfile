@@ -133,21 +133,44 @@ pipeline {
              stage('OWASP ZAP'){
                steps {
                 script {
-                    echo "Starting vulnerable container for DAST..."
-                    sh "docker run -d -p 5005:5005 --name test-${BUILD_NUMBER} ${IMAGE_NAME}:${BUILD_NUMBER}"
-                    sleep(10)
+                    echo '🔍 Running OWASP ZAP baseline scan...'
 
-                    echo "Running OWASP ZAP scan..."
-                    sh '''
-                        docker run --rm -v $(pwd):/zap/wrk/:rw \
-                        owasp/zap2docker-stable zap-baseline.py \
-                        -t http://host.docker.internal:5005 \
-                        -r zap_report.html || true
-                    '''
+                    // Run ZAP but ignore exit code
+                    def exitCode = sh(script: '''
+                        docker run --rm --user root --network host -v $(pwd):/zap/wrk:rw \
+                        -t zaproxy/zap-stable zap-baseline.py \
+                        -t http://localhost:5005 \
+                        -r zap_report.html -J zap_report.json
+                    ''', returnStatus: true)
+
+                    echo "ZAP scan finished with exit code: ${exitCode}"
+
+                    // Read the JSON report if it exists
+                    if (fileExists('zap_report.json')) {
+                        def zapJson = readJSON file: 'zap_report.json'
+
+                        def highCount = zapJson.site.collect { site ->
+                            site.alerts.findAll { it.risk == 'High' }.size()
+                        }.sum()
+
+                        def mediumCount = zapJson.site.collect { site ->
+                            site.alerts.findAll { it.risk == 'Medium' }.size()
+                        }.sum()
+
+                        def lowCount = zapJson.site.collect { site ->
+                            site.alerts.findAll { it.risk == 'Low' }.size()
+                        }.sum()
+
+                        echo "✅ High severity issues: ${highCount}"
+                        echo "⚠️ Medium severity issues: ${mediumCount}"
+                        echo "ℹ️ Low severity issues: ${lowCount}"
+                    } else {
+                        echo "ZAP JSON report not found, continuing build..."
+                    }
                 }
                }
              }
-             stage('Wapiti'){
+            stage('Wapiti'){
                 steps{
                   script{
                 
@@ -155,7 +178,7 @@ pipeline {
                     sh '''
                         docker run --rm -v $(pwd):/tmp/ \
                         projectdiscovery/wapiti \
-                        -u http://host.docker.internal:5000 \
+                        -u http://host.docker.internal:5005 \
                         -f html -o wapiti_report.html || true
                     '''
 
