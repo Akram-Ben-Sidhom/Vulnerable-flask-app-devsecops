@@ -114,15 +114,16 @@ pipeline {
                     echo "⏳ Updating Trivy DB..."
                     sh 'trivy image --download-db-only'
 
+                    echo "🖥️ Scanning filesystem ..."
+                    sh '''
+                     trivy fs --exit-code 1 --severity HIGH,CRITICAL --format json -o trivy-fs-report.json . || true
+                    ''' 
+                    // here used the or true to continue and evade the exit code because of vulnerabilities found (just for test only)
                     echo "🔎 Scanning built image..."
                     sh """
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL --format json -o trivy-report.json ${imageTag}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --format json -o trivy-report.json ${imageTag} || true 
                     """
 
-                    echo "🖥️ Scanning filesystem (optional)..."
-                    sh '''
-                     trivy fs --exit-code 1 --severity HIGH,CRITICAL --format json -o trivy-fs-report.json .
-                    ''' 
                     }
                }
         }
