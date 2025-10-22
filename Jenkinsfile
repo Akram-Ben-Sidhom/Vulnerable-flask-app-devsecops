@@ -7,7 +7,6 @@ pipeline {
     agent any
 
     environment {
-        SCANNER_HOME = tool 'sonarqube'
         NEXUS_VERSION = 'nexus3'
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "192.168.50.4:8081"
@@ -16,6 +15,8 @@ pipeline {
         NEXUS_CREDENTIAL_ID = "nexus"
         ARTVERSION = "${env.BUILD_ID}"
         IMAGE_NAME = "vuln-flask-app"
+        SONAR_HOST_URL='http://192.168.50.4:9000/'
+        SONAR_AUTH_TOKEN=credentials('sonarqube')
     }
 
     stages {
@@ -55,18 +56,18 @@ pipeline {
 
                 stage('SonarQube Analysis') {
                     steps {
-                        withSonarQubeEnv('sonarqube') {
                             sh '''
                                 echo "🔎 Running SonarQube scan..."
-                                ${SCANNER_HOME}/bin/sonar-scanner \
-                                    -Dsonar.projectKey=${IMAGE_NAME} \
+                                 sh 'mvn sonar:sonar \
+                                    -Dsonar.projectkey=desvsecops \
+                                    -Dsonar.host.url=$SONAR_HOST_URL \
+                                    -Dsonar.token=$SONAR_AUTH_TOKEN' \
                                     -Dsonar.projectName=${IMAGE_NAME} \
                                     -Dsonar.projectVersion=1.0 \
                                     -Dsonar.sources=. \
                                     -Dsonar.language=py \
                                     -Dsonar.sourceEncoding=UTF-8
                             '''
-                        }
                     }
                 }
 
@@ -74,8 +75,10 @@ pipeline {
                     steps {
                         sh '''
                             echo "🔒 Running Bandit scan..."
-                            pip install --quiet bandit
-                            bandit -r . -f json -o bandit-report.json || true
+                               docker run --rm \
+                               -v $(pwd):/data \
+                               cytopia/bandit:latest-py3.8 \
+                               -r /data -f json -o /data/bandit-report.json || true
                         '''
                     }
                 }
