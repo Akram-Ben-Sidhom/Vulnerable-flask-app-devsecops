@@ -71,6 +71,7 @@ pipeline {
                            '''
                     }
                 }
+                }
 
                 stage('Bandit Scan') {
                     steps {
