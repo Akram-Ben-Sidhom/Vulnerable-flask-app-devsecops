@@ -19,7 +19,7 @@ Run locally (in an isolated environment):
 
 Or Using docker:
 1. docker build -t vuln-flask-app:latest .
-2. docker run --rm -p 5000:5000 --name vuln-flask-app vuln-flask-app:latest
+2. docker run --rm -p port:5005 --name vuln-flask-app vuln-flask-app:latest
 
 
 
